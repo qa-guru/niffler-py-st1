@@ -1,5 +1,7 @@
+import pytest
 from selene import browser, have, command
 from marks import Pages, TestData
+from models.spend import SpendAdd
 
 
 @Pages.main_page
@@ -10,15 +12,22 @@ def test_spending_title_exists():
 TEST_CATEGORY = "school"
 
 
-@Pages.main_page
+@pytest.fixture()
+def main_page_late(category, spends, envs):
+    browser.open(envs.frontend_url)
+
+
+@pytest.mark.usefixtures("main_page_late")
 @TestData.category(TEST_CATEGORY)
-@TestData.spends({
-        "amount": "108.51",
-        "description": "QA.GURU Python Advanced 1",
-        "category": TEST_CATEGORY,
-        "spendDate": "2024-08-08T18:39:27.955Z",
-        "currency": "RUB"
-    })
+@TestData.spends(
+    SpendAdd(
+        amount=108.51,
+        description="QA.GURU Python Advanced 1",
+        category=TEST_CATEGORY,
+        spendDate="2024-08-08T18:39:27.955Z",
+        currency="RUB"
+    )
+)
 def test_spending_should_be_deleted_after_table_action(category, spends):
     browser.element('.spendings-table tbody').should(have.text("QA.GURU Python Advanced 1"))
     browser.element('.spendings-table tbody input[type=checkbox]').perform(command.js.scroll_into_view).click()
