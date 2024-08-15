@@ -28,6 +28,12 @@ class SpendsHttpClient:
         response.raise_for_status()
         return response.json()
 
+    def get_spends(self):
+        url = urljoin(self.base_url, "/api/spends/all")
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json()
+
     def add_spends(self, body):
         url = urljoin(self.base_url, "/api/spends/add")
         response = self.session.post(url, json=body)

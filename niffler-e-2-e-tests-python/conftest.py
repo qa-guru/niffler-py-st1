@@ -55,13 +55,11 @@ def category(request, spends_client):
 
 @pytest.fixture(params=[])
 def spends(request, spends_client):
-    spend = spends_client.add_spends(request.param)
-    yield spend
-    try:
-        # TODO вместо исключения проверить список текущих spends
-        spends_client.remove_spends([spend["id"]])
-    except Exception:
-        pass
+    test_spend = spends_client.add_spends(request.param)
+    yield test_spend
+    all_spends = spends_client.get_spends()
+    if test_spend["id"] in [spend["id"] for spend in all_spends]:
+        spends_client.remove_spends([test_spend["id"]])
 
 
 @pytest.fixture()
