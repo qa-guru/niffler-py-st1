@@ -3,6 +3,8 @@ from selene import browser, have, command
 from marks import Pages, TestData
 from models.spend import SpendAdd
 
+pytestmark = [pytest.mark.allure_label("Spendings", label_type="epic")]
+
 
 @Pages.main_page
 def test_spending_title_exists():
