@@ -1,0 +1,10 @@
+pytest==8.3.2
+selene
+requests==2.32.3
+Faker~=26.0.0
+python-dotenv==0.21.1
+allure-pytest~=2.13.0
+pkce~=1.0.3
+flake8<=7.0
+isort<=5.13
+black<=23.12
