@@ -8,6 +8,8 @@ from allure_pytest.listener import AllureListener
 from pytest import Item, FixtureDef, FixtureRequest
 from dotenv import load_dotenv
 from selene import browser
+
+from clients.auth_client import AuthClient
 from clients.spends_client import SpendsHttpClient
 from databases.spend_db import SpendDb
 from models.config import Envs
@@ -39,6 +41,8 @@ def envs() -> Envs:
     envs_instance = Envs(
         frontend_url=os.getenv("FRONTEND_URL"),
         gateway_url=os.getenv("GATEWAY_URL"),
+        auth_url=os.getenv("AUTH_URL"),
+        auth_secret=os.getenv("AUTH_SECRET"),
         spend_db_url=os.getenv("SPEND_DB_URL"),
         test_username=os.getenv("TEST_USERNAME"),
         test_password=os.getenv("TEST_PASSWORD")
@@ -48,7 +52,7 @@ def envs() -> Envs:
 
 
 @pytest.fixture(scope="session")
-def auth(envs):
+def auth_front_token(envs: Envs):
     browser.open(envs.frontend_url)
     browser.element('a[href*=redirect]').click()
     browser.element('input[name=username]').set_value(envs.test_username)
@@ -61,8 +65,15 @@ def auth(envs):
 
 
 @pytest.fixture(scope="session")
-def spends_client(envs, auth) -> SpendsHttpClient:
-    return SpendsHttpClient(envs.gateway_url, auth)
+def auth_api_token(envs: Envs):
+    token = AuthClient(envs).auth(envs.test_username, envs.test_password)
+    allure.attach(token, name="token.txt", attachment_type=AttachmentType.TEXT)
+    return token
+
+
+@pytest.fixture(scope="session")
+def spends_client(envs, auth_front_token) -> SpendsHttpClient:
+    return SpendsHttpClient(envs.gateway_url, auth_front_token)
 
 
 @pytest.fixture(scope="session")
@@ -88,5 +99,5 @@ def spends(request: FixtureRequest, spends_client):
 
 
 @pytest.fixture()
-def main_page(auth, envs):
+def main_page(auth_front_token, envs):
     browser.open(envs.frontend_url)
