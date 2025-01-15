@@ -1,9 +1,11 @@
 import base64
 import hashlib
+import logging
 import os
 import re
 from urllib.parse import urlparse, parse_qs
 
+import curlify
 from requests import Session
 
 from models.config import Envs
@@ -16,6 +18,9 @@ class AuthSession(Session):
 
     def request(self, method, url, **kwargs):
         response = super().request(method, url, **kwargs)
+        print(curlify.to_curl(response.request))
+        print(response.text)
+        print(response.headers)
         for r in response.history:
             cookies = r.cookies.get_dict()
             self.cookies.update(cookies)
@@ -41,9 +46,7 @@ class AuthClient:
         self.token = None
 
     def auth(self, username, password):
-        session = AuthSession()
-
-        session.get(
+        self.session.get(
             url=f"{self.domain_url}/oauth2/authorize",
             params={
                 "response_type": "code",
@@ -56,20 +59,20 @@ class AuthClient:
             allow_redirects=True
         )
 
-        session.post(
+        self.session.post(
             url=f"{self.domain_url}/login",
             data={
                 "username": username,
                 "password": password,
-                "_csrf": session.cookies.get("XSRF-TOKEN")
+                "_csrf": self.session.cookies.get("XSRF-TOKEN")
             },
             allow_redirects=True
         )
 
-        token_response = session.post(
+        token_response = self.session.post(
             url=f"{self.domain_url}/oauth2/token",
             data={
-                "code": session.code,
+                "code": self.session.code,
                 "redirect_uri": "http://frontend.niffler.dc/authorized",
                 "code_verifier": self.code_verifier,
                 "grant_type": "authorization_code",
@@ -80,3 +83,24 @@ class AuthClient:
 
         self.token = token_response.json().get("access_token", None)
         return self.token
+
+    def register(self, username, password):
+        self.session.get(
+            url=f"{self.domain_url}/register",
+            params={
+                "redirect_uri": "http://auth.niffler.dc:9000/register",
+            },
+            allow_redirects=True
+        )
+
+        result = self.session.post(
+            url=f"{self.domain_url}/register",
+            data={
+                "username": username,
+                "password": password,
+                "passwordSubmit": password,
+                "_csrf": self.session.cookies.get("XSRF-TOKEN")
+            },
+            allow_redirects=True
+        )
+        return result

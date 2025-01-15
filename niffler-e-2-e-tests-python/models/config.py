@@ -1,3 +1,6 @@
+import os
+
+from dotenv import load_dotenv
 from pydantic import BaseModel
 
 
@@ -9,3 +12,4 @@ class Envs(BaseModel):
     spend_db_url: str
     test_username: str
     test_password: str
+    kafka_address: str

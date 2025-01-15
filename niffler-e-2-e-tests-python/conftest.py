@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from selene import browser
 
 from clients.auth_client import AuthClient
+from clients.kafka_client import KafkaClient
 from clients.spends_client import SpendsHttpClient
 from databases.spend_db import SpendDb
 from models.config import Envs
@@ -26,13 +27,13 @@ def pytest_runtest_call(item: Item):
     allure.dynamic.title(" ".join(item.name.split("_")[1:]).title())
 
 
-@pytest.hookimpl(hookwrapper=True, trylast=True)
-def pytest_fixture_setup(fixturedef: FixtureDef, request: FixtureRequest):
-    yield
-    logger = allure_logger(request.config)
-    item = logger.get_last_item()
-    scope_letter = fixturedef.scope[0].upper()
-    item.name = f"[{scope_letter}] " + " ".join(fixturedef.argname.split("_")).title()
+# @pytest.hookimpl(hookwrapper=True, trylast=True)
+# def pytest_fixture_setup(fixturedef: FixtureDef, request: FixtureRequest):
+#     yield
+#     logger = allure_logger(request.config)
+#     item = logger.get_last_item()
+#     scope_letter = fixturedef.scope[0].upper()
+#     item.name = f"[{scope_letter}] " + " ".join(fixturedef.argname.split("_")).title()
 
 
 @pytest.fixture(scope="session")
@@ -45,7 +46,8 @@ def envs() -> Envs:
         auth_secret=os.getenv("AUTH_SECRET"),
         spend_db_url=os.getenv("SPEND_DB_URL"),
         test_username=os.getenv("TEST_USERNAME"),
-        test_password=os.getenv("TEST_PASSWORD")
+        test_password=os.getenv("TEST_PASSWORD"),
+        kafka_address=os.getenv("KAFKA_ADDRESS"),
     )
     allure.attach(envs_instance.model_dump_json(indent=2), name="envs.json", attachment_type=AttachmentType.JSON)
     return envs_instance
@@ -65,8 +67,13 @@ def auth_front_token(envs: Envs):
 
 
 @pytest.fixture(scope="session")
-def auth_api_token(envs: Envs):
-    token = AuthClient(envs).auth(envs.test_username, envs.test_password)
+def auth_client(envs: Envs):
+    return AuthClient(envs)
+
+
+@pytest.fixture(scope="session")
+def auth_api_token(envs: Envs, auth_client):
+    token = auth_client.auth(envs.test_username, envs.test_password)
     allure.attach(token, name="token.txt", attachment_type=AttachmentType.TEXT)
     return token
 
@@ -101,3 +108,9 @@ def spends(request: FixtureRequest, spends_client):
 @pytest.fixture()
 def main_page(auth_front_token, envs):
     browser.open(envs.frontend_url)
+
+@pytest.fixture(scope="session")
+def kafka(envs):
+    """Взаимодействие с Kafka"""
+    with KafkaClient(envs) as k:
+        yield k
