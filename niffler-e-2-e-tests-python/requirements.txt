@@ -1,0 +1,15 @@
+selene>=2.0.0rc7
+pytest~=8.3.2
+requests~=2.32.3
+python-dotenv~=1.0.1
+allure-pytest~=2.13.5
+requests-toolbelt~=1.0.0
+
+psycopg2-binary
+sqlalchemy~=2.0.34
+sqlmodel~=0.0.22
+
+pydantic~=2.10.3
+allure-python-commons~=2.13.5
+Faker==33.3.0
+grpcio-tools==1.69.0
